@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# PyTest
+.pytest_cache/
+
+# IDE
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Runtime data
+data/input/Images/
+data/input/Documents/
+data/input/PDFs/
+data/input/Code/
+data/input/Videos/
+data/input/Music/
+data/input/Archives/
+data/input/Others/
