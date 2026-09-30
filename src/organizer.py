@@ -27,9 +27,10 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from pathlib import Path
 from typing import Dict, List
-
+from .backup import backup_files
 
 # Name of the fallback category for extensions that are not configured.
 OTHERS_CATEGORY = "Others"
@@ -188,11 +189,23 @@ def main() -> None:
     project_root = get_project_root()
     input_dir = project_root / "data" / "input"
     config_path = project_root / "config" / "categories.json"
+    backup_dir = project_root / "backup"
+    log_file = project_root / "logs" / "backup.log"
 
     organizer = FileOrganizer(input_dir=input_dir, config_path=config_path)
+
+    # Stage 2: back up every file BEFORE anything is moved.
+    backup_result = backup_files(input_dir, backup_dir, log_file)
+    print(f"Backed up {len(backup_result.backed_up)} file(s) to {backup_dir}")
+    if not backup_result.success:
+        for file_path, message in backup_result.failed:
+            print(f"  BACKUP FAILED: {file_path.name} ({message})")
+        print("Organizing cancelled: some files could not be backed up. "
+              f"See {log_file}")
+        sys.exit(1)
+
+    # Stage 1: existing organizer logic (unchanged).
     results = organizer.organize()
     print_report(results)
-
-
 if __name__ == "__main__":
     main()
