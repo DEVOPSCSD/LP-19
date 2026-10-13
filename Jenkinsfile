@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -15,25 +14,25 @@ pipeline {
 
         stage('Check Python') {
             steps {
-                bat 'python --version'
+                bat '"C:\\Users\\NALANDA\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe" --version'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                bat 'python -m pip install -r requirements-dev.txt'
+                bat '"C:\\Users\\NALANDA\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation\\Python.3.13_qbz5n2kfra8p0\\python.exe" -m pip install -r requirements-dev.txt'
             }
         }
 
         stage('Validate Python') {
             steps {
-                bat 'python -m compileall -q src tests'
+                bat '"C:\\Users\\NALANDA\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation\\Python.3.13_qbz5n2kfra8p0\\python.exe" -m compileall -q src tests'
             }
         }
 
         stage('Run Tests') {
             steps {
-                bat 'python -m pytest -v'
+                bat '"C:\\Users\\NALANDA\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation\\Python.3.13_qbz5n2kfra8p0\\python.exe" -m pytest -v'
             }
         }
     }
