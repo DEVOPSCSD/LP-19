@@ -1,48 +1,59 @@
 pipeline {
-    agent any
+agent any
 
-    options {
-        timestamps()
-    }
+options {
+    timestamps()
+}
 
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
+environment {
+    PYTHON = 'C:\\Users\\NALANDA\\AppData\\Local\\Programs\\Python\\Python312\\python.exe'
+}
 
-        stage('Check Python') {
-            steps {
-                bat '"C:\\Users\\NALANDA\\Downloads\\automatic-file-organizer-stage1m1\\automatic-file-organizer\\.venv\\Scripts\\python.exe" --version'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                bat '"C:\\Users\\NALANDA\\Downloads\\automatic-file-organizer-stage1m1\\automatic-file-organizer\\.venv\\Scripts\\python.exe" -m pip install -r requirements-dev.txt'
-            }
-        }
-
-        stage('Validate Python') {
-            steps {
-                bat '"C:\\Users\\NALANDA\\Downloads\\automatic-file-organizer-stage1m1\\automatic-file-organizer\\.venv\\Scripts\\python.exe" -m compileall -q src tests'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                bat '"C:\\Users\\NALANDA\\Downloads\\automatic-file-organizer-stage1m1\\automatic-file-organizer\\.venv\\Scripts\\python.exe" -m pytest -v'
-            }
+stages {
+    stage('Checkout') {
+        steps {
+            checkout scm
         }
     }
 
-    post {
-        success {
-            echo 'SUCCESS: All project tests passed.'
-        }
-        failure {
-            echo 'FAILURE: Check the Console Output.'
+    stage('Check Python') {
+        steps {
+            bat '"%PYTHON%" --version'
         }
     }
+
+    stage('Create Virtual Environment') {
+        steps {
+            bat '"%PYTHON%" -m venv .venv'
+        }
+    }
+
+    stage('Install Dependencies') {
+        steps {
+            bat '".venv\\Scripts\\python.exe" -m pip install -r requirements-dev.txt'
+        }
+    }
+
+    stage('Validate Python') {
+        steps {
+            bat '".venv\\Scripts\\python.exe" -m compileall -q src tests'
+        }
+    }
+
+    stage('Run Tests') {
+        steps {
+            bat '".venv\\Scripts\\python.exe" -m pytest -v'
+        }
+    }
+}
+
+post {
+    success {
+        echo 'SUCCESS: All project tests passed.'
+    }
+    failure {
+        echo 'FAILURE: Check the Console Output.'
+    }
+}
+
 }
