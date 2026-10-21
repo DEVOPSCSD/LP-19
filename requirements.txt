@@ -1,0 +1,3 @@
+# Application Dependencies
+# Web Framework
+flask>=3.0.0

@@ -1,0 +1,2 @@
+This is a safe sample document for Selenium automated UI testing.
+Team 19 - Automatic File Organizer & Backup System.

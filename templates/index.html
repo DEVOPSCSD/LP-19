@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automatic File Organizer &amp; Backup System | Team 19</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-text">
+        <h1 id="app-heading">Automatic File Organizer &amp; Backup System</h1>
+        <p class="subtitle">Team 19 — Smart File Organization &amp; Backup</p>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-team">Team 19</span>
+        <span class="badge badge-devops">DevOps Project</span>
+      </div>
+    </header>
+
+    <!-- Alerts / Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="alerts-container">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" role="alert">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Top Grid: Upload & Actions -->
+    <div class="main-grid">
+      <!-- File Upload Card -->
+      <div class="card" id="upload-card">
+        <h2 class="card-title">
+          <span>1. Upload Files</span>
+          <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">Multiple Allowed</span>
+        </h2>
+        <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+          <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">&#128194;</div>
+            <div class="dropzone-text">Click or drag &amp; drop files here</div>
+            <div class="dropzone-subtext">Files are safely staged into <code>data/web_input/</code></div>
+          </div>
+          <input type="file" id="file-input" name="files" class="hidden-file-input" multiple required>
+          
+          <!-- Selected Filenames Preview -->
+          <div class="selected-files-box" id="selected-files-box">
+            <div class="selected-files-header">Selected Files to Upload:</div>
+            <ul class="selected-files-list" id="selected-files-list"></ul>
+          </div>
+
+          <button type="submit" id="upload-btn" class="btn btn-primary">
+            Upload to Staging Folder
+          </button>
+        </form>
+      </div>
+
+      <!-- Actions Card -->
+      <div class="card" id="actions-card">
+        <h2 class="card-title">2. Organization Actions</h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Select an execution strategy for loose files currently staged in <code>data/web_input/</code>.
+        </p>
+
+        <div class="action-buttons-group">
+          <form action="/organize" method="post">
+            <button type="submit" id="organize-btn" class="btn btn-primary">
+              &#128450; Organize Files
+            </button>
+          </form>
+
+          <form action="/backup-organize" method="post">
+            <button type="submit" id="backup-organize-btn" class="btn btn-secondary">
+              &#128190; Backup &amp; Organize
+            </button>
+          </form>
+
+          <form id="organize-download-form" action="/organize-download" method="post">
+            <button type="submit" id="organize-download-btn" class="btn btn-accent">
+              &#128230; Organize &amp; Download ZIP
+            </button>
+          </form>
+        </div>
+
+        <div class="info-banner">
+          <strong>Safety Guarantee:</strong> Existing files are never overwritten. 
+          Duplicate names automatically receive sequential suffixes (<code>_1</code>, <code>_2</code>).
+          When <em>Backup &amp; Organize</em> is chosen, files are backed up to <code>data/web_backup/</code> before movement.
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="card results-card" id="results-section">
+      <h2 class="card-title">
+        <span>Operation Results</span>
+        {% if latest_results and latest_results.operation != "None" %}
+          <span class="badge" style="background: #e0f2fe; color: #0369a1;">
+            {{ latest_results.operation }} &bull; {{ latest_results.timestamp }}
+          </span>
+        {% endif %}
+      </h2>
+
+      <!-- Metrics Counters -->
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <div class="metric-title">Total Processed</div>
+          <div class="metric-value primary" id="metric-total-processed">
+            {{ latest_results.total_processed if latest_results else 0 }}
+          </div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-title">Files Organized</div>
+          <div class="metric-value success" id="metric-files-organized">
+            {{ latest_results.files_organized if latest_results else 0 }}
+          </div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-title">Backup Count</div>
+          <div class="metric-value success" id="metric-backup-count">
+            {{ latest_results.backup_count if latest_results else 0 }}
+          </div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-title">Duplicate Count</div>
+          <div class="metric-value warning" id="metric-duplicate-count">
+            {{ latest_results.duplicate_count if latest_results else 0 }}
+          </div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-title">Failed Count</div>
+          <div class="metric-value danger" id="metric-failed-count">
+            {{ latest_results.failed_count if latest_results else 0 }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem;">
+        Category Results
+      </h3>
+      <div class="categories-grid" id="category-results-grid">
+        {% set cat_counts = latest_results.category_counts if (latest_results and latest_results.category_counts) else {} %}
+        {% for cat in standard_categories %}
+          <div class="category-card" id="cat-card-{{ cat|lower|replace(' ', '-') }}">
+            <span class="category-name">{{ cat }}</span>
+            <span class="category-count">{{ cat_counts.get(cat, 0) }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Directory Status Grid -->
+    <div class="main-grid">
+      <!-- Staged Loose Files -->
+      <div class="card" id="staged-files-card">
+        <h2 class="card-title">
+          <span>Staged Loose Files</span>
+          <span class="badge" style="background:#f1f5f9; color:#475569;">data/web_input/</span>
+        </h2>
+        {% if loose_files %}
+          <ul class="file-list" id="loose-files-list">
+            {% for file in loose_files %}
+              <li class="file-item">
+                <span>{{ file.name }}</span>
+                <span class="badge" style="background: #e2e8f0; color: #1e293b;">{{ file.size }} bytes</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state">No loose files currently waiting in staging folder.</div>
+        {% endif %}
+      </div>
+
+      <!-- Organized Category Folders -->
+      <div class="card" id="organized-folders-card">
+        <h2 class="card-title">
+          <span>Organized Folders</span>
+          <span class="badge" style="background:#f1f5f9; color:#475569;">Subdirectories</span>
+        </h2>
+        {% if categories %}
+          <ul class="file-list" id="category-folders-list">
+            {% for cat, files in categories.items() %}
+              <li class="file-item">
+                <strong>{{ cat }}/</strong>
+                <span class="badge" style="background: #dbeafe; color: #1d4ed8;">{{ files|length }} file(s)</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state">No category folders created yet.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Recent Logs -->
+    <div class="card" id="logs-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h2 style="font-size: 1.15rem; font-weight: 600; color: var(--text-main);">Recent Activity &amp; Logs</h2>
+        <a href="/logs" target="_blank" style="font-size: 0.85rem; color: var(--primary); font-weight: 500; text-decoration: none;">
+          View Raw Log File &rarr;
+        </a>
+      </div>
+      <div class="terminal" id="terminal-logs">{{ recent_logs if recent_logs else "No logs recorded yet." }}</div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      Automatic File Organizer &amp; Backup System &bull; Team 19 &bull; Roll Nos: 24P61A67I8, 24P61A67I9, 24P61A67J0
+    </footer>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
